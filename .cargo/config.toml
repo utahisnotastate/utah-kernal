@@ -1,0 +1,8 @@
+[build]
+# This tells the compiler we are not running on Windows, Mac, or Linux.
+# We are running directly on the raw computer processor (x86_64 architecture).
+target = "x86_64-unknown-none"
+
+[target.'cfg(target_os = "none")']
+# 'bootimage' is a tool that packages our code into a format the computer can boot from.
+runner = "bootimage runner"

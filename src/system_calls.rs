@@ -1,0 +1,408 @@
+//! Secure "drive-through" between guest WebAssembly and the kernel.
+//! Guests never touch hardware; they call small host functions we expose on purpose.
+
+extern crate alloc;
+
+use alloc::vec;
+use wasmi::{Caller, Engine, Linker};
+
+/// Largest single print the kernel will copy from guest memory (avoids huge allocations).
+const MAX_PRINT_TEXT_BYTES: usize = 4096;
+/// Largest blob the HFS will accept per save call.
+const MAX_HOLOGRAM_BYTES: usize = 64 * 1024;
+/// Largest intent the Zero-Point Network will accept per broadcast.
+const MAX_BROADCAST_BYTES: usize = 64 * 1024;
+const MAX_DELTA_BYTES: usize = 64 * 1024;
+const MAX_GHOST_STATE_BYTES: usize = 256 * 1024;
+
+/// Registers the kernel's safe "menu" of host functions on the linker before instantiation.
+pub fn register_system_calls(linker: &mut Linker<()>, _engine: &Engine) {
+    // System Call 1: print bytes from guest linear memory to the VGA text buffer.
+    linker
+        .func_wrap(
+            "utah_system",
+            "print_text_to_screen",
+            |caller: Caller<'_, ()>, memory_pointer: i32, text_length: i32| {
+                read_guest_bytes(&caller, memory_pointer, text_length, MAX_PRINT_TEXT_BYTES)
+                    .map(|buffer| {
+                        match core::str::from_utf8(&buffer) {
+                            Ok(readable_text) => {
+                                crate::display_text_on_screen(readable_text.as_bytes());
+                            }
+                            Err(_) => crate::display_text_on_screen(
+                                b"[ERROR: Program tried to print invalid text characters]",
+                            ),
+                        }
+                    })
+                    .unwrap_or_else(|message| crate::display_text_on_screen(message));
+            },
+        )
+        .expect("Failed to register the print system call.");
+
+    // System Call 2: manifest (save) data into the Holographic File System; returns resonance signature.
+    linker
+        .func_wrap(
+            "utah_system",
+            "save_hologram",
+            |caller: Caller<'_, ()>, memory_pointer: i32, data_length: i32| -> u64 {
+                match read_guest_bytes(&caller, memory_pointer, data_length, MAX_HOLOGRAM_BYTES)
+                {
+                    Ok(buffer) => {
+                        let signature = crate::hfs::manifest_data_global(&buffer);
+                        crate::display_text_on_screen(
+                            b"[HFS] Data etched. Resonance signature generated.",
+                        );
+                        signature
+                    }
+                    Err(message) => {
+                        crate::display_text_on_screen(message);
+                        0
+                    }
+                }
+            },
+        )
+        .expect("Failed to register HFS save call.");
+
+    // System Call 3: load hologram bytes into guest linear memory at destination_pointer.
+    // Returns the number of bytes written (0 if not found or on error).
+    linker
+        .func_wrap(
+            "utah_system",
+            "load_hologram",
+            |mut caller: Caller<'_, ()>, signature: u64, destination_pointer: i32| -> i32 {
+                let Some(memory) = caller
+                    .get_export("memory")
+                    .and_then(|exported_item| exported_item.into_memory())
+                else {
+                    crate::display_text_on_screen(
+                        b"[ERROR: WebAssembly program has no exported \"memory\"]",
+                    );
+                    return 0;
+                };
+
+                let Ok(offset) = usize::try_from(destination_pointer) else {
+                    crate::display_text_on_screen(b"[ERROR: Invalid destination pointer]");
+                    return 0;
+                };
+
+                let payload_length = match crate::hfs::hologram_length_global(signature) {
+                    Some(length) => length,
+                    None => {
+                        crate::display_text_on_screen(b"[HFS] Resonance signature not found.");
+                        return 0;
+                    }
+                };
+
+                let mut staging_buffer = vec![0u8; payload_length];
+                let Some(bytes_read) =
+                    crate::hfs::retrieve_data_global(signature, &mut staging_buffer)
+                else {
+                    crate::display_text_on_screen(b"[HFS] Resonance signature not found.");
+                    return 0;
+                };
+
+                if memory
+                    .write(&mut caller, offset, &staging_buffer[..bytes_read])
+                    .is_err()
+                {
+                    crate::display_text_on_screen(
+                        b"[ERROR: Could not write hologram into guest memory]",
+                    );
+                    return 0;
+                }
+
+                crate::display_text_on_screen(
+                    b"[HFS] Resonance match confirmed. Data injected.",
+                );
+                i32::try_from(bytes_read).unwrap_or(i32::MAX)
+            },
+        )
+        .expect("Failed to register HFS load call.");
+
+    // System Call 4: broadcast headerless intent to a target resonance frequency.
+    linker
+        .func_wrap(
+            "utah_system",
+            "broadcast",
+            |caller: Caller<'_, ()>,
+             target_freq: u64,
+             memory_pointer: i32,
+             data_length: i32| {
+                match read_guest_bytes(
+                    &caller,
+                    memory_pointer,
+                    data_length,
+                    MAX_BROADCAST_BYTES,
+                ) {
+                    Ok(buffer) => {
+                        crate::zero_point_net::broadcast_intent_global(target_freq, &buffer);
+                    }
+                    Err(message) => crate::display_text_on_screen(message),
+                }
+            },
+        )
+        .expect("Failed to register broadcast call.");
+
+    // System Call 5: consume the next intent tuned to this node's local frequency.
+    linker
+        .func_wrap(
+            "utah_system",
+            "consume",
+            |mut caller: Caller<'_, ()>, destination_pointer: i32| -> i32 {
+                let Some(data) = crate::zero_point_net::consume_intent_global() else {
+                    return 0;
+                };
+
+                let Some(memory) = caller
+                    .get_export("memory")
+                    .and_then(|exported_item| exported_item.into_memory())
+                else {
+                    crate::display_text_on_screen(
+                        b"[ERROR: WebAssembly program has no exported \"memory\"]",
+                    );
+                    return 0;
+                };
+
+                let Ok(offset) = usize::try_from(destination_pointer) else {
+                    crate::display_text_on_screen(b"[ERROR: Invalid destination pointer]");
+                    return 0;
+                };
+
+                if memory.write(&mut caller, offset, &data).is_err() {
+                    crate::display_text_on_screen(
+                        b"[ERROR: Could not write intent into guest memory]",
+                    );
+                    return 0;
+                }
+
+                crate::display_text_on_screen(b"[ZPN] Telepathic state injected into guest.");
+                i32::try_from(data.len()).unwrap_or(i32::MAX)
+            },
+        )
+        .expect("Failed to register consume call.");
+
+    // System Call 6: record user intent and return predicted next action (0 = none).
+    linker
+        .func_wrap(
+            "utah_system",
+            "record_and_predict",
+            |_: Caller<'_, ()>, action_id: i32| -> u64 {
+                let Ok(action) = u32::try_from(action_id) else {
+                    crate::display_text_on_screen(b"[CHRONO] Invalid action id.");
+                    return 0;
+                };
+
+                match crate::chrono_scheduler::record_and_predict_global(action) {
+                    Some(predicted) => predicted as u64,
+                    None => 0,
+                }
+            },
+        )
+        .expect("Failed to register record_and_predict call.");
+
+    // System Call 7: consume a pre-staged predictive intent prepared by the scheduler.
+    linker
+        .func_wrap(
+            "utah_system",
+            "take_staged_intent",
+            |_: Caller<'_, ()>| -> u64 {
+                match crate::chrono_scheduler::take_staged_intent_global() {
+                    Some(staged) => staged as u64,
+                    None => 0,
+                }
+            },
+        )
+        .expect("Failed to register take_staged_intent call.");
+
+    // System Call 8: read packed thermodynamic telemetry (idle_ticks:high, noise:low).
+    linker
+        .func_wrap(
+            "utah_system",
+            "read_thermodynamics",
+            |_: Caller<'_, ()>| -> u64 {
+                crate::thermodynamic_virtualizer::telemetry_snapshot_global()
+            },
+        )
+        .expect("Failed to register read_thermodynamics call.");
+
+    // System Call 9: retune local telepathic mesh frequency.
+    linker
+        .func_wrap(
+            "utah_system",
+            "tune_mesh",
+            |_: Caller<'_, ()>, frequency: u64| {
+                crate::zero_point_net::tune_local_resonance(frequency);
+                crate::display_text_on_screen(b"[ZPN] Mesh resonance retuned.");
+            },
+        )
+        .expect("Failed to register tune_mesh call.");
+
+    // System Call 10: return active mesh resonance frequency.
+    linker
+        .func_wrap(
+            "utah_system",
+            "mesh_frequency",
+            |_: Caller<'_, ()>| -> u64 {
+                crate::zero_point_net::local_resonance_global()
+            },
+        )
+        .expect("Failed to register mesh_frequency call.");
+
+    // System Call 11: delta-wave patch (base + delta blobs in guest memory) -> HFS signature.
+    linker
+        .func_wrap(
+            "utah_system",
+            "apply_delta_patch",
+            |caller: Caller<'_, ()>,
+             base_pointer: i32,
+             base_length: i32,
+             delta_pointer: i32,
+             delta_length: i32| -> u64 {
+                let base = match read_guest_bytes(
+                    &caller,
+                    base_pointer,
+                    base_length,
+                    MAX_DELTA_BYTES,
+                ) {
+                    Ok(bytes) => bytes,
+                    Err(message) => {
+                        crate::display_text_on_screen(message);
+                        return 0;
+                    }
+                };
+                let delta = match read_guest_bytes(
+                    &caller,
+                    delta_pointer,
+                    delta_length,
+                    MAX_DELTA_BYTES,
+                ) {
+                    Ok(bytes) => bytes,
+                    Err(message) => {
+                        crate::display_text_on_screen(message);
+                        return 0;
+                    }
+                };
+
+                match crate::delta_wave_patch::commit_patched_image(&base, &delta) {
+                    Ok(signature) => {
+                        crate::display_text_on_screen(b"[DELTA] Atomic wave patch committed.");
+                        signature
+                    }
+                    Err(()) => 0,
+                }
+            },
+        )
+        .expect("Failed to register apply_delta_patch call.");
+
+    // System Call 12: ghost-daemon suspend — collapse guest state into HFS.
+    linker
+        .func_wrap(
+            "utah_system",
+            "ghost_suspend",
+            |caller: Caller<'_, ()>, memory_pointer: i32, state_length: i32| -> u64 {
+                match read_guest_bytes(
+                    &caller,
+                    memory_pointer,
+                    state_length,
+                    MAX_GHOST_STATE_BYTES,
+                ) {
+                    Ok(state) => crate::ghost_daemon::suspend_guest_state(&state),
+                    Err(message) => {
+                        crate::display_text_on_screen(message);
+                        0
+                    }
+                }
+            },
+        )
+        .expect("Failed to register ghost_suspend call.");
+
+    // System Call 13: ghost-daemon resume — inject last collapsed state into guest memory.
+    linker
+        .func_wrap(
+            "utah_system",
+            "ghost_resume",
+            |mut caller: Caller<'_, ()>, destination_pointer: i32| -> i32 {
+                let Some(memory) = caller
+                    .get_export("memory")
+                    .and_then(|exported_item| exported_item.into_memory())
+                else {
+                    crate::display_text_on_screen(
+                        b"[ERROR: WebAssembly program has no exported \"memory\"]",
+                    );
+                    return 0;
+                };
+
+                let Ok(offset) = usize::try_from(destination_pointer) else {
+                    crate::display_text_on_screen(b"[ERROR: Invalid destination pointer]");
+                    return 0;
+                };
+
+                let max_restore = 64 * 1024;
+                let mut buffer = vec![0u8; max_restore];
+                let Some(bytes_written) = crate::ghost_daemon::resume_guest_state(&mut buffer)
+                else {
+                    crate::display_text_on_screen(b"[GHOST] No suspended state available.");
+                    return 0;
+                };
+
+                if memory
+                    .write(&mut caller, offset, &buffer[..bytes_written])
+                    .is_err()
+                {
+                    crate::display_text_on_screen(
+                        b"[ERROR: Could not inject ghost state into guest memory]",
+                    );
+                    return 0;
+                }
+
+                crate::display_text_on_screen(b"[GHOST] State resumed from holographic matrix.");
+                i32::try_from(bytes_written).unwrap_or(i32::MAX)
+            },
+        )
+        .expect("Failed to register ghost_resume call.");
+
+    // System Call 14: enter phantom void sleep — physical CPU halt (does not return).
+    linker
+        .func_wrap(
+            "utah_system",
+            "enter_phantom_sleep",
+            |_: Caller<'_, ()>| -> u64 {
+                crate::ghost_daemon::enter_phantom_sleep();
+                #[allow(unreachable_code)]
+                0
+            },
+        )
+        .expect("Failed to register enter_phantom_sleep call.");
+}
+
+fn read_guest_bytes(
+    caller: &Caller<'_, ()>,
+    memory_pointer: i32,
+    data_length: i32,
+    max_bytes: usize,
+) -> Result<alloc::vec::Vec<u8>, &'static [u8]> {
+    let Some(memory) = caller
+        .get_export("memory")
+        .and_then(|exported_item| exported_item.into_memory())
+    else {
+        return Err(b"[ERROR: WebAssembly program has no exported \"memory\"]");
+    };
+
+    let Ok(length) = usize::try_from(data_length) else {
+        return Err(b"[ERROR: Negative buffer length]");
+    };
+    if length == 0 {
+        return Ok(vec![]);
+    }
+
+    let safe_length = length.min(max_bytes);
+    let Ok(offset) = usize::try_from(memory_pointer) else {
+        return Err(b"[ERROR: Invalid memory pointer]");
+    };
+
+    let mut buffer = vec![0u8; safe_length];
+    if memory.read(caller, offset, &mut buffer).is_err() {
+        return Err(b"[ERROR: Could not read guest memory]");
+    }
+    Ok(buffer)
+}

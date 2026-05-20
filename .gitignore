@@ -1,0 +1,71 @@
+# Rust / Cargo
+/target/
+**/*.rs.bk
+*.pdb
+
+# Bootimage / kernel build artifacts
+/bootimage-*.bin
+/bootimage-*.img
+*.iso
+utah_v1_signed.pkg
+utah_v1_release.bin
+
+# WebAssembly payloads (pack your own locally)
+*.wasm
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+
+# IDE / editors
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# OS junk
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Logs and temp files
+*.log
+*.tmp
+*.temp
+.cache/
+
+# Secrets / credentials (never commit)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+credentials.json
+
+# QEMU / emulator scratch
+qemu*.log
+*.qcow2
+
+# Coverage / test artifacts
+tarpaulin-report.html
+coverage/
+*.profraw
+
+# Backup files from utah-pack (optional local edits)
+src/main.rs.bak
