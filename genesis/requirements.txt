@@ -1,0 +1,3 @@
+# Utah-OS Genesis (host development)
+# Production Utah-Browser will add:
+# wry>=0.37

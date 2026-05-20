@@ -2,7 +2,18 @@
 
 World-A installers use MSI wizards and `apt-get`. **Ghost-Burner** injects Utah-OS into the **EFI boot chain** beside Windows — your games and apps stay on existing NTFS volumes.
 
-## Windows: `utah_install.ps1`
+## USB Ghost-Key: `create_utah_usb.ps1` (recommended for demos)
+
+```powershell
+cd core
+cargo bootimage --release
+cd ..
+.\tools\create_utah_usb.ps1
+```
+
+Select USB, type **YES** to format, reboot from USB. **Internal Windows disk is not formatted.**
+
+## Windows EFI: `utah_install.ps1`
 
 Run **PowerShell as Administrator** from the repo root:
 

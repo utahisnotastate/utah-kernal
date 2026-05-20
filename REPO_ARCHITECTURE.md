@@ -22,8 +22,14 @@ utah-kernal/
 ├── tools/                # Compiler of reality
 │   ├── utah-pack.py      # WASM → kernel embed → bootimage
 │   ├── utah-deploy.sh    # Release forge + optional encryption
-│   ├── utah_install.ps1 # Windows EFI infiltrator (dual-boot with Windows)
+│   ├── utah_install.ps1  # Windows EFI infiltrator (dual-boot with Windows)
+│   ├── create_utah_usb.ps1 # USB Ghost-Boot key (GRUB + kernel)
+│   ├── grub/utah_grub.cfg
 │   └── ghost-burner.md   # Ghost-Burner documentation
+├── genesis/              # UtahApp scaffold (browser, vibe-code)
+│   └── src/core/base_app.py
+├── docs/
+│   └── GHOST_BOOT.md     # Hypervisor + USB + Windows coexistence
 ├── manifest/             # Hardware resonance schemas
 │   ├── m5-pebble.schema.json
 │   └── m5-pebble.default.json

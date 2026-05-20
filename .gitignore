@@ -16,6 +16,7 @@ utah_v1_release.bin
 
 # Python
 __pycache__/
+genesis/**/__pycache__/
 *.py[cod]
 *$py.class
 .Python
