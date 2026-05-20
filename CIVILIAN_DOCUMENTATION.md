@@ -28,6 +28,10 @@ When you run an app on the Utah-Kernel, your app is placed directly inside the V
 
 Your programs run at the absolute maximum speed the physical silicon allows. You are no longer running an "Operating System." You are running pure intention on bare metal.
 
+### Multiple monitors (Utah-OS on `main`)
+
+Traditional systems treat each screen as a separate desktop and reshuffle windows when you unplug a cable. Utah-OS maps every monitor into **one continuous canvas** at the kernel level, so the pointer and apps know exactly where they belong — without a heavy window-manager loop. Details: [docs/DISPLAY.md](docs/DISPLAY.md).
+
 ---
 
 **Try it:** [docs/QUICKSTART.md](docs/QUICKSTART.md) · **Project:** [github.com/utahisnotastate/utah-kernal](https://github.com/utahisnotastate/utah-kernal)

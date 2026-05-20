@@ -18,6 +18,18 @@ This is the first **public release** of the project: a bare-metal WebAssembly un
 
 The release is **complete as an open-source foundation**: build, document, boot, extend. It is **not** a replacement for Windows or Linux for daily desktop use.
 
+## Post-1.0.0 on `main` (not yet tagged)
+
+| Area | Added on `main` |
+|------|-----------------|
+| Host API | Calls 19–24: themes + unified display (`get_canvas_dimensions`, `pin_window_to_monitor`, `resolve_global_pixel`, `refresh_display_pins`) |
+| UI | Theme presets (Dark/Golden/Light/Linda/Occult), vibe parser, desktop manifold |
+| Display | `core/src/display/` — virtual topology, EDID optimization, intent-based pinning |
+| Tools | `forge_iso.py` for VM ISO images |
+| Docs | [DISPLAY.md](DISPLAY.md), [THEMES.md](THEMES.md) |
+
+Clone **`main`** for the latest behavior; pin **`v1.0.0`** for the first tagged baseline. See [CHANGELOG.md](../CHANGELOG.md#unreleased).
+
 ## Artifacts
 
 | Artifact | Path |

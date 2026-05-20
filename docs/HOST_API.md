@@ -4,6 +4,8 @@ WebAssembly guests import functions from module **`utah_system`**. All pointer/l
 
 Register new capabilities in `core/src/system_calls.rs`.
 
+**Current `main` branch:** **24** host imports (calls 1–24). Tagged **v1.0.0** shipped 18 imports; calls 19–24 and display topology are post-release — see [CHANGELOG.md](../CHANGELOG.md#unreleased).
+
 ## Requirements
 
 | Export | Type | Notes |
@@ -18,6 +20,12 @@ Register new capabilities in `core/src/system_calls.rs`.
 | Import | Signature | Returns | Description |
 |--------|-----------|---------|-------------|
 | `print_text_to_screen` | `(i32 ptr, i32 len)` | — | UTF-8 text to VGA (0xB8000) |
+| `get_canvas_dimensions` | `()` | `i64` | Unified canvas width (high 32) and height (low 32) |
+| `pin_window_to_monitor` | `(i32 monitor, i32 w, i32 h)` | — | Pin guest window frame to monitor index |
+| `resolve_global_pixel` | `(i32 gx, i32 gy)` | `i64` | Map global coords to head/local pixel (0 = off-screen) |
+| `refresh_display_pins` | `()` | — | Redraw pinned borders and composite to Glass-Forge |
+
+See [DISPLAY.md](DISPLAY.md).
 
 ### Holographic File System
 
@@ -87,7 +95,7 @@ See [THEMES.md](THEMES.md).
 (import "utah_system" "record_and_predict" (func $predict (param i32) (result i64)))
 ```
 
-## Limits (v1.0.0)
+## Limits (current)
 
 | Operation | Max bytes per call |
 |-----------|-------------------|

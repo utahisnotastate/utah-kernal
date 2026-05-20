@@ -15,7 +15,7 @@ Utah-OS does **not** reformat your Windows drive. It coexists via **UEFI handoff
 ```
 UEFI firmware
     └── Utah-OS Aegis-Kernel (Ring-0, ~5ms init target)
-            ├── Glass-Forge → VRAM / framebuffer
+            ├── Unified display topology → Glass-Forge framebuffer
             ├── HFS + Zero-Point mesh + Chrono-Scheduler
             └── Windows capsule (roadmap: KVM + GPU passthrough)
 ```
@@ -26,7 +26,7 @@ UEFI firmware
 - **Utah-OS as Type-1 layer**: Kernel boots first; detects Windows partition; encapsulates NTFS boot chain in a VM with VFIO GPU assignment.
 - **Control plane**: Utah monitors guest physical memory ranges for optimization, invisible assistants, and debug hooks Windows cannot see from inside the guest.
 
-**Current repo status:** Ring-0 kernel, host calls, USB/EFI installers, and Genesis app scaffold ship today. Full hypervisor + VFIO is documented here for integration phases.
+**Current repo status:** Ring-0 kernel, 24 host calls, unified display topology (simulated heads), USB/EFI installers, and Genesis app scaffold ship on `main`. Full hypervisor + VFIO is documented here for integration phases.
 
 ## USB layout (after `create_utah_usb.ps1`)
 

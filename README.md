@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-nightly-orange)](rust-toolchain.toml)
-[![Release](https://img.shields.io/badge/release-v1.0.0-green)](CHANGELOG.md)
+[![Release](https://img.shields.io/badge/release-v1.0.0-green)](CHANGELOG.md) [![Main](https://img.shields.io/badge/main-24%20host%20calls-blue)](CHANGELOG.md#unreleased)
 
 **Repository:** [github.com/utahisnotastate/utah-kernal](https://github.com/utahisnotastate/utah-kernal)
 
@@ -14,22 +14,25 @@ A **bare-metal**, **Ring-0** unikernel that runs **WebAssembly** with explicit h
 
 ---
 
-## What ships in v1.0.0
+## Features (current `main` branch)
 
 | Component | Description |
 |-----------|-------------|
-| **Kernel** (`core/`) | Heap, Wasmi runtime, Multiboot2, 18 `utah_system` host calls |
+| **Kernel** (`core/`) | Heap, Wasmi runtime, Multiboot2, **24** `utah_system` host calls |
+| **Display** (`core/src/display/`) | Unified virtual desktop topology, EDID refresh optimization, intent-based window pinning |
 | **HFS** | Content-addressed storage (DJB2 resonance signatures) |
 | **Zero-Point Network** | Resonance-frequency messaging (no TCP/IP in kernel) |
 | **Chrono-Scheduler** | Predictive intent pre-staging |
 | **Ghost-Daemon** | State collapse, phantom sleep, system freeze |
 | **Glass-Forge** (`ui/`) | Themed desktop manifold (Dark/Golden/Light/Linda/Occult) + vibe parser |
-| **Tools** | `utah-pack`, `utah-deploy`, USB + EFI Ghost-Burner scripts |
+| **Tools** | `utah-pack`, `utah-deploy`, `forge_iso`, USB + EFI Ghost-Burner scripts |
 | **Genesis** | Python `UtahApp` / Utah-Browser / VibeCode demos |
 
-**Roadmap (not v1.0.0):** KVM Windows capsule, GPU passthrough, NVMe, physical NIC, Wry browser blit.
+**Tagged [v1.0.0](https://github.com/utahisnotastate/utah-kernal/releases/tag/v1.0.0)** shipped the core foundation (18 host calls). Post-1.0.0 work on `main` adds themes, manifold UI, display topology, and calls 19–24 — see [CHANGELOG.md](CHANGELOG.md#unreleased).
 
-Details: [docs/RELEASE.md](docs/RELEASE.md) · [CHANGELOG.md](CHANGELOG.md)
+**Roadmap:** KVM Windows capsule, GPU passthrough, real GOP/DDC probe, NVMe, physical NIC, Wry browser blit.
+
+Details: [docs/RELEASE.md](docs/RELEASE.md) · [docs/DISPLAY.md](docs/DISPLAY.md)
 
 ---
 
@@ -75,8 +78,9 @@ Full guide: [docs/QUICKSTART.md](docs/QUICKSTART.md)
 UEFI / QEMU
     └── Utah-Kernel (Ring-0)
             ├── Wasmi (WASM guests)
+            ├── Display topology (unified multi-head canvas)
             ├── HFS · ZPN · Chrono · Ghost-Daemon
-            └── Glass-Forge → linear framebuffer
+            └── Glass-Forge → linear framebuffer (+ pinned window borders)
 ```
 
 - **No** Linux / Windows / X11 / Wayland required on bare metal.
@@ -90,7 +94,7 @@ utah-kernal/
 ├── tools/      # pack, deploy, USB/EFI installers
 ├── genesis/    # UtahApp Python scaffold
 ├── manifest/   # M5-Pebble hardware JSON
-└── docs/       # QUICKSTART, HOST_API, RELEASE, GHOST_BOOT
+└── docs/       # QUICKSTART, HOST_API, DISPLAY, RELEASE, GHOST_BOOT, THEMES
 ```
 
 [REPO_ARCHITECTURE.md](REPO_ARCHITECTURE.md)
@@ -115,7 +119,7 @@ Module: **`utah_system`**. Guest must export **`memory`** and **`_start`**.
 
 | Category | Imports |
 |----------|---------|
-| Display | `print_text_to_screen` |
+| Display | `print_text_to_screen`, `get_canvas_dimensions`, `pin_window_to_monitor`, `resolve_global_pixel`, `refresh_display_pins` |
 | Storage | `save_hologram`, `load_hologram` |
 | Network | `broadcast`, `consume`, `tune_mesh`, `mesh_frequency` |
 | Scheduler | `record_and_predict`, `take_staged_intent` |
@@ -147,6 +151,8 @@ Complete tables: [docs/HOST_API.md](docs/HOST_API.md)
 | Audience | Document |
 |----------|----------|
 | Developers | [README.md](README.md) (this file), [docs/HOST_API.md](docs/HOST_API.md), [UTAH_OS.md](UTAH_OS.md) |
+| Multi-monitor | [docs/DISPLAY.md](docs/DISPLAY.md) |
+| Themes | [docs/THEMES.md](docs/THEMES.md) |
 | Quick setup | [docs/QUICKSTART.md](docs/QUICKSTART.md) |
 | Release scope | [docs/RELEASE.md](docs/RELEASE.md), [CHANGELOG.md](CHANGELOG.md) |
 | Non-technical | [CIVILIAN_DOCUMENTATION.md](CIVILIAN_DOCUMENTATION.md) |
@@ -172,9 +178,9 @@ cargo bootimage --release
 
 ## Status
 
-**v1.0.0** is a **complete open-source foundation**: documented, buildable, bootable in QEMU, packagable via WASM, installable via USB/EFI scripts.
+**v1.0.0** (tag) is a documented, buildable open-source foundation. **`main`** adds unified display topology, theme registry, desktop manifold, and 24 host imports — see [CHANGELOG](CHANGELOG.md#unreleased).
 
-It is a **high-density research prototype**, not a daily-driver desktop OS. Use QEMU and USB paths for safe testing.
+This is a **high-density research prototype**, not a daily-driver desktop OS. Use QEMU and USB paths for safe testing.
 
 ---
 

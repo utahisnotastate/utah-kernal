@@ -2,7 +2,7 @@
 
 Utah-OS is the product layer on **[Utah-Kernel](https://github.com/utahisnotastate/utah-kernal)** — an intent-state environment, not a classic file-and-process manager.
 
-**Version:** 1.0.0 · **Host API:** [docs/HOST_API.md](docs/HOST_API.md) · **Quick start:** [docs/QUICKSTART.md](docs/QUICKSTART.md)
+**Version:** 1.0.0 (tag) · **main:** display topology + 24 host calls · **Host API:** [docs/HOST_API.md](docs/HOST_API.md) · **Display:** [docs/DISPLAY.md](docs/DISPLAY.md) · **Quick start:** [docs/QUICKSTART.md](docs/QUICKSTART.md)
 
 ## Competitive edge
 
@@ -14,7 +14,7 @@ Utah-OS is the product layer on **[Utah-Kernel](https://github.com/utahisnotasta
 | **Updates** | Full reinstall | Delta-wave HFS patches |
 | **Introspection** | Reactive logs | Thermodynamic telemetry |
 | **Security** | MMU page faults | WASM validation + host boundaries |
-| **UI** | Compositor / WM | Glass-Forge direct-to-VRAM |
+| **UI** | Compositor / WM | Glass-Forge direct-to-VRAM + unified multi-head topology |
 
 ## Modules (source paths)
 
@@ -31,7 +31,9 @@ Utah-OS is the product layer on **[Utah-Kernel](https://github.com/utahisnotasta
 | Delta | `core/src/delta_wave_patch.rs` | In-place patches |
 | Ghost | `core/src/ghost_daemon.rs` | Suspend / freeze / `hlt` |
 | UI bridge | `core/src/ui.rs` | Glass-Forge link |
-| Glass-Forge | `ui/src/` | Framebuffer + glass + voxels |
+| Display | `core/src/display/` | Topology, EDID, window pinning |
+| Themes | `core/src/theme.rs`, `ui/src/theme.rs` | Presets + vibe parser |
+| Glass-Forge | `ui/src/` | Framebuffer + manifold + voxels |
 | Genesis apps | `genesis/src/` | Python `UtahApp` scaffold |
 
 ## Ghost-Boot (Windows coexistence)
@@ -49,21 +51,24 @@ Architecture: [docs/GHOST_BOOT.md](docs/GHOST_BOOT.md)
 
 See [docs/HOST_API.md](docs/HOST_API.md). Summary:
 
-- **Display:** `print_text_to_screen`
+- **Display:** `print_text_to_screen`, `get_canvas_dimensions`, `pin_window_to_monitor`, `resolve_global_pixel`, `refresh_display_pins`
 - **HFS:** `save_hologram`, `load_hologram`
 - **ZPN:** `broadcast`, `consume`, `tune_mesh`, `mesh_frequency`
 - **Chrono:** `record_and_predict`, `take_staged_intent`
 - **Thermo:** `read_thermodynamics`
 - **Patch:** `apply_delta_patch`
 - **Ghost:** `ghost_suspend`, `ghost_resume`, `register_wasm_snapshot`, `finalize_system_freeze`, `enter_phantom_sleep`
-- **UI:** `render_interface_node`, `draw_voxel_cloud`
+- **UI:** `render_interface_node`, `draw_voxel_cloud`, `set_theme_preset`, `apply_vibe_theme`
 
-## Glass-Forge
+## Glass-Forge & display
 
 - 800×600 BGRA buffer in `ui/src/framebuffer.rs`
-- Boot splash: `ui/src/glass.rs` → `draw_boot_splash()`
+- Boot: `render_boot_splash()` → themed desktop manifold (`ui/src/manifold.rs`)
+- **Unified topology:** monitors stitched into one canvas (`core/src/display/topology.rs`); EDID refresh tiers (`edid.rs`); intent pinning (`window_manager.rs`)
 - Dynamic clouds: `ui/src/voxel.rs` → `draw_dynamic_voxel_cloud()`
 - No X11, Wayland, HTML, or Qt on bare metal
+
+See [docs/DISPLAY.md](docs/DISPLAY.md).
 
 ## Build
 
@@ -82,10 +87,12 @@ py -3 src/apps/browser.py
 
 Apps use `UtahApp` in `genesis/src/core/base_app.py` — compile to WASM and pack for bare metal.
 
-## v1.0.0 scope
+## Release scope
 
-**Included:** kernel, UI crate, tools, docs, Genesis scaffold, USB/EFI installers.
+**v1.0.0 (tag):** kernel, UI crate, tools, docs, Genesis scaffold, USB/EFI installers, 18 host calls.
 
-**Roadmap:** KVM + GPU passthrough for Windows games, NVMe HFS persistence, NIC driver, Wry browser → framebuffer.
+**`main` (post-1.0.0):** theme registry, desktop manifold, `forge_iso.py`, unified display topology, host calls 19–24.
+
+**Roadmap:** KVM + GPU passthrough for Windows games, real GOP/DDC at boot, NVMe HFS persistence, NIC driver, Wry browser → framebuffer.
 
 [docs/RELEASE.md](docs/RELEASE.md)

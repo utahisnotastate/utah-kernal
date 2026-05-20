@@ -17,6 +17,9 @@ pub fn boot() {
     crate::ui::init_framebuffer();
     crate::ui::render_boot_splash();
     crate::display_text_on_screen(b"Glass-Forge manifold online.");
+    crate::display::boot_display_stack();
+    crate::display::composite_primary_head_to_framebuffer();
+    crate::display_text_on_screen(b"Unified display topology + pinning online.");
 }
 
 /// Idle servicing hook — harvest thermodynamics and run ghost housekeeping.

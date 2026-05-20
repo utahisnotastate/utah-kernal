@@ -13,6 +13,7 @@ Thank you for helping improve [utah-kernal](https://github.com/utahisnotastate/u
 | Goal | Location |
 |------|----------|
 | New host call | `core/src/system_calls.rs` + `docs/HOST_API.md` |
+| Display / topology | `core/src/display/` + `docs/DISPLAY.md` |
 | Kernel boot / init | `core/src/main.rs`, `core/src/utah_os.rs` |
 | UI drawing | `ui/src/` |
 | Packaging | `tools/utah-pack.py` |

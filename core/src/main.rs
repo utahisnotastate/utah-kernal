@@ -10,6 +10,7 @@ core::arch::global_asm!(include_str!("boot.asm"));
 mod allocator;
 mod chrono_scheduler;
 mod delta_wave_patch;
+mod display;
 mod ghost_daemon;
 mod hfs;
 mod kernel_config;

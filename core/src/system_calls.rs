@@ -466,6 +466,68 @@ pub fn register_system_calls(linker: &mut Linker<()>, _engine: &Engine) {
             },
         )
         .expect("Failed to register apply_vibe_theme call.");
+
+    // System Call 21: unified virtual canvas dimensions (high 32 = width, low 32 = height).
+    linker
+        .func_wrap(
+            "utah_system",
+            "get_canvas_dimensions",
+            |_: Caller<'_, ()>| -> i64 {
+                let (w, h) = crate::display::global_canvas_dimensions();
+                (((w as u64) << 32) | (h as u64)) as i64
+            },
+        )
+        .expect("Failed to register get_canvas_dimensions call.");
+
+    // System Call 22: pin window to monitor index (rule 0 = strict index).
+    linker
+        .func_wrap(
+            "utah_system",
+            "pin_window_to_monitor",
+            |_: Caller<'_, ()>, monitor_index: i32, width: i32, height: i32| {
+                let w = width.max(0) as u32;
+                let h = height.max(0) as u32;
+                let idx = monitor_index.max(0) as u32;
+                crate::display::pin_window(
+                    "WASM-Pinned-Window",
+                    w,
+                    h,
+                    crate::display::ApplicationPinRule::StrictMonitorIndex(idx),
+                );
+                crate::display::composite_primary_head_to_framebuffer();
+            },
+        )
+        .expect("Failed to register pin_window_to_monitor call.");
+
+    // System Call 23: resolve global (x,y) -> packed (monitor:16, local_x:16, local_y:32) or 0.
+    linker
+        .func_wrap(
+            "utah_system",
+            "resolve_global_pixel",
+            |_: Caller<'_, ()>, global_x: i32, global_y: i32| -> i64 {
+                let topo = crate::display::topology();
+                if let Some((head, lx, ly)) = topo.resolve_physical_coordinates(global_x, global_y)
+                {
+                    let monitor = head.monitor_hardware_index as u64;
+                    ((monitor << 48) | ((lx as u64) << 32) | (ly as u64)) as i64
+                } else {
+                    0
+                }
+            },
+        )
+        .expect("Failed to register resolve_global_pixel call.");
+
+    // System Call 24: refresh pinned window borders on all heads.
+    linker
+        .func_wrap(
+            "utah_system",
+            "refresh_display_pins",
+            |_: Caller<'_, ()>| {
+                crate::display::render_pinned_windows();
+                crate::display::composite_primary_head_to_framebuffer();
+            },
+        )
+        .expect("Failed to register refresh_display_pins call.");
 }
 
 fn read_guest_bytes(

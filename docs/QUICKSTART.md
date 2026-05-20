@@ -81,6 +81,14 @@ python tools/forge_iso.py
 qemu-system-x86_64 -cdrom target/utah-os.iso -m 512 -vga std
 ```
 
+**Dual-head topology test** (software-unified canvas; secondary VGA for future GOP):
+
+```bash
+qemu-system-x86_64 -cdrom target/utah-os.iso -m 1024 -display default,show-cursor=on -device secondary-vga
+```
+
+Pinned window borders composite onto the primary Glass-Forge buffer — see [DISPLAY.md](DISPLAY.md).
+
 ## 8. Try Genesis apps (host dev)
 
 ```bash
@@ -92,5 +100,6 @@ py -3 src/apps/vibe_code.py "open calculator"
 ## Next reading
 
 - [HOST_API.md](HOST_API.md) — all system calls
+- [DISPLAY.md](DISPLAY.md) — multi-monitor topology and pinning
 - [GHOST_BOOT.md](GHOST_BOOT.md) — hypervisor roadmap
 - [../REPO_ARCHITECTURE.md](../REPO_ARCHITECTURE.md) — full tree

@@ -6,6 +6,11 @@ All notable changes to [utah-kernal](https://github.com/utahisnotastate/utah-ker
 
 ### Added
 
+- Documentation sync across README, UTAH_OS, RELEASE, HOST_API, DISPLAY, architecture docs
+
+- **Unified display topology** (`core/src/display/`): multi-head virtual canvas, EDID refresh optimization, intent-based window pinning
+- Host calls 21–24: `get_canvas_dimensions`, `pin_window_to_monitor`, `resolve_global_pixel`, `refresh_display_pins`
+- [docs/DISPLAY.md](docs/DISPLAY.md) — architecture and QEMU notes
 - Theme Registry Matrix (`ui/src/theme.rs`): Dark, Golden, Light, Linda, Occult presets
 - Runtime vibe-code color parser (`apply_vibe_theme` host call)
 - Utah-OS desktop manifold renderer (taskbar, panels, browser workspace)

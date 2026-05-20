@@ -1,6 +1,6 @@
 # Utah-Kernel Repository Architecture
 
-**Release:** v1.0.0 · **Repo:** [github.com/utahisnotastate/utah-kernal](https://github.com/utahisnotastate/utah-kernal)
+**Release:** v1.0.0 (tag) · **main:** display topology + 24 host calls · **Repo:** [github.com/utahisnotastate/utah-kernal](https://github.com/utahisnotastate/utah-kernal)
 
 ## Directory tree
 
@@ -10,7 +10,8 @@ utah-kernal/
 │   ├── src/
 │   │   ├── main.rs            # Entry (rewritten by utah-pack)
 │   │   ├── boot.asm           # Multiboot2 header
-│   │   ├── system_calls.rs    # utah_system host API
+│   │   ├── system_calls.rs    # utah_system host API (24 imports on main)
+│   │   ├── display/           # topology, edid, window_manager
 │   │   ├── wasm_runtime.rs
 │   │   ├── hfs.rs
 │   │   ├── zero_point_net.rs
@@ -28,6 +29,8 @@ utah-kernal/
 │       ├── lib.rs
 │       ├── framebuffer.rs
 │       ├── glass.rs
+│       ├── manifold.rs
+│       ├── theme.rs
 │       └── voxel.rs
 ├── tools/
 │   ├── utah-pack.py
@@ -46,6 +49,7 @@ utah-kernal/
 ├── docs/
 │   ├── QUICKSTART.md
 │   ├── HOST_API.md
+│   ├── DISPLAY.md
 │   ├── RELEASE.md
 │   └── GHOST_BOOT.md
 ├── README.md
@@ -77,14 +81,14 @@ cargo check -p utah-kernel -p glass-forge
 WASM guest
   → import utah_system::*
     → core/src/system_calls.rs
-      → hfs | zpn | chrono | ghost | ui (glass-forge)
+      → hfs | zpn | chrono | ghost | display | ui (glass-forge)
 ```
 
 ## Boot flow
 
 1. `_start` in `core/src/main.rs`
 2. `allocator::initialize_system_heap()`
-3. `utah_os::boot()` — config, Glass-Forge splash, subsystems
+3. `utah_os::boot()` — config, Glass-Forge splash, display topology + pins, subsystems
 4. Optional embedded WASM via `wasm_runtime::run_web_assembly_program`
 5. Idle: `utah_os::service_idle()`
 
