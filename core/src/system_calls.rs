@@ -385,6 +385,51 @@ pub fn register_system_calls(linker: &mut Linker<()>, _engine: &Engine) {
             },
         )
         .expect("Failed to register render_interface_node call.");
+
+    // System Call 16: register WASM linear memory for final ghost freeze.
+    linker
+        .func_wrap(
+            "utah_system",
+            "register_wasm_snapshot",
+            |caller: Caller<'_, ()>, memory_pointer: i32, data_length: i32| {
+                if let Ok(buffer) =
+                    read_guest_bytes(&caller, memory_pointer, data_length, MAX_GHOST_STATE_BYTES)
+                {
+                    crate::ghost_daemon::register_wasm_linear_memory_snapshot(&buffer);
+                }
+            },
+        )
+        .expect("Failed to register register_wasm_snapshot call.");
+
+    // System Call 17: final system freeze — HFS commit + cli/hlt (never returns).
+    linker
+        .func_wrap(
+            "utah_system",
+            "finalize_system_freeze",
+            |_: Caller<'_, ()>| -> u64 {
+                crate::ghost_daemon::finalize_system_freeze();
+                #[allow(unreachable_code)]
+                0
+            },
+        )
+        .expect("Failed to register finalize_system_freeze call.");
+
+    // System Call 18: dynamic voxel cloud at mouse/gaze vector (Glass-Forge).
+    linker
+        .func_wrap(
+            "utah_system",
+            "draw_voxel_cloud",
+            |_: Caller<'_, ()>,
+             origin_x: i32,
+             origin_y: i32,
+             vector_x: i32,
+             vector_y: i32,
+             intensity: i32| {
+                let level = u8::try_from(intensity.clamp(0, 255)).unwrap_or(160);
+                crate::ui::draw_dynamic_voxel_cloud(origin_x, origin_y, vector_x, vector_y, level);
+            },
+        )
+        .expect("Failed to register draw_voxel_cloud call.");
 }
 
 fn read_guest_bytes(

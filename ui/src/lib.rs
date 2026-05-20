@@ -5,6 +5,7 @@
 
 mod framebuffer;
 mod glass;
+mod voxel;
 
 pub use framebuffer::{
     clear_framebuffer, map_physical_framebuffer, Framebuffer, FramebufferConfig,
@@ -13,6 +14,7 @@ pub use framebuffer::{
 pub use glass::{
     draw_boot_splash, draw_glass_panel, draw_particle_node, render_interface_node,
 };
+pub use voxel::draw_dynamic_voxel_cloud;
 
 use core::sync::atomic::{AtomicBool, Ordering};
 

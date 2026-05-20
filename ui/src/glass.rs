@@ -73,6 +73,9 @@ pub fn draw_boot_splash() {
         render_interface_node(x, y, (140 + index * 8) as u8);
     }
 
+    // Demo interaction vector (mouse-style); production feeds webcam gaze via host call.
+    crate::voxel::draw_dynamic_voxel_cloud(400, 320, 48, -24, 200);
+
     draw_label(56, 64, b"Utah-OS Glass-Forge");
 }
 

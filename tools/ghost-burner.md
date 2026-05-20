@@ -1,34 +1,45 @@
 # Ghost-Burner — Zero-Click Utah-OS Installer
 
-World-A installers use `apt-get`, MSI wizards, or drag-and-drop `.dmg` files. **Ghost-Burner** is a self-bootstrapping pre-boot environment that mirrors the Utah-Kernel into an existing machine without replacing the user's primary OS.
+World-A installers use MSI wizards and `apt-get`. **Ghost-Burner** injects Utah-OS into the **EFI boot chain** beside Windows — your games and apps stay on existing NTFS volumes.
 
-## Concept
+## Windows: `utah_install.ps1`
 
-1. User runs `Utah-OS-Installer` (future host binary built from this spec).
-2. The machine reboots into a **temporary Utah partition in RAM** (PXE or USB pre-boot).
-3. Ghost-Burner performs a **bit-level mirror** of the target drive and injects:
-   - Utah-Kernel boot sector entry (sovereign dual-boot)
-   - HFS resonance table stub
-   - Glass-Forge framebuffer config from `manifest/m5-pebble.json`
-4. User reboots; GRUB/multiboot menu offers **Utah-OS** alongside Windows/Linux.
+Run **PowerShell as Administrator** from the repo root:
 
-## Status
+```powershell
+cd core
+cargo bootimage --release
+cd ..
+.\tools\utah_install.ps1
+```
 
-This repository ships the **kernel and forge tools** (`utah-pack`, `utah-deploy`). The Ghost-Burner host executable (Windows `.exe` / Linux ELF) is the next product artifact — it will wrap:
+### What it does
 
-- `tools/utah-pack.py` — embed WASM payloads
-- `tools/utah-deploy.sh` — forge signed `utah_v1_signed.pkg`
-- `core/target/.../bootimage-utah-kernel.bin` — bootable kernel
+1. Locates `core/target/.../bootimage-utah-kernel.bin` (builds if missing — you must build first).
+2. Uses the existing **EFI System Partition** when possible, or creates a **512MB FAT32** `UTAH-OS` partition.
+3. Copies the kernel to `\EFI\UtahOS\boot\BOOTX64.EFI`.
+4. Registers a **BCD** entry: **Utah-OS Reality Console**.
+5. Reboot → pick Utah-OS from the firmware/boot menu.
 
-## Safety
+### Safety
 
-Ghost-Burner must never overwrite user data without explicit consent. Production builds require:
+- Does **not** delete Windows partitions.
+- Requires explicit admin consent (UAC).
+- Back up important data before modifying boot configuration.
 
-- Drive snapshot backup
-- Checksum verification of injected boot sectors
-- Signed Utah-Kernel packages only
+## Linux / RAM installer (future)
+
+The original PXE/RAM mirror flow remains the long-term path for bit-level dual-boot without Windows BCD.
+
+## Kernel integration
+
+| Host import | Role |
+|-------------|------|
+| `register_wasm_snapshot` | Queue WASM linear memory before freeze |
+| `finalize_system_freeze` | HFS commit + `cli`/`hlt` (never returns) |
+| `ghost_suspend` / `ghost_resume` | Per-session state collapse |
 
 ## Related
 
 - [REPO_ARCHITECTURE.md](../REPO_ARCHITECTURE.md)
-- [manifest/m5-pebble.schema.json](../manifest/m5-pebble.schema.json)
+- [manifest/m5-pebble.default.json](../manifest/m5-pebble.default.json)

@@ -7,10 +7,17 @@
 
 extern crate alloc;
 
+use alloc::vec::Vec;
 use spin::Mutex;
 
 /// Resonance signature of the last suspended ghost state (if any).
 static GHOST_STATE_SIGNATURE: Mutex<Option<u64>> = Mutex::new(None);
+
+/// Pending WASM linear-memory snapshots captured before a system freeze.
+static WASM_LINEAR_MEMORY_SNAPSHOTS: Mutex<Vec<Vec<u8>>> = Mutex::new(Vec::new());
+
+/// Combined memory-state hash committed on finalize (if any).
+static MEMORY_STATE_RESONANCE: Mutex<Option<u64>> = Mutex::new(None);
 
 /// True while the CPU is in (or entering) phantom void state.
 static PHANTOM_VOID_ACTIVE: Mutex<bool> = Mutex::new(false);
@@ -22,6 +29,16 @@ static VOID_TRANSITION_COUNTER: Mutex<u32> = Mutex::new(0);
 pub fn initialize() {
     *GHOST_STATE_SIGNATURE.lock() = None;
     *PHANTOM_VOID_ACTIVE.lock() = false;
+    WASM_LINEAR_MEMORY_SNAPSHOTS.lock().clear();
+    *MEMORY_STATE_RESONANCE.lock() = None;
+}
+
+/// Registers a WASM sandbox linear-memory segment for the final freeze snapshot.
+pub fn register_wasm_linear_memory_snapshot(data: &[u8]) {
+    if data.is_empty() {
+        return;
+    }
+    WASM_LINEAR_MEMORY_SNAPSHOTS.lock().push(data.to_vec());
 }
 
 /// Collapses guest state into the HFS and records its resonance signature.
@@ -142,4 +159,52 @@ pub fn wake_from_phantom() {
         core::arch::asm!("sti", options(nomem, nostack, preserves_flags));
     }
     crate::display_text_on_screen(b"[GHOST] Woke from Void State.");
+}
+
+/// Snapshot count of registered WASM segments awaiting freeze.
+pub fn pending_wasm_snapshot_count() -> usize {
+    WASM_LINEAR_MEMORY_SNAPSHOTS.lock().len()
+}
+
+/// Last committed memory-state resonance signature from [`finalize_system_freeze`].
+pub fn memory_state_resonance() -> u64 {
+    MEMORY_STATE_RESONANCE.lock().unwrap_or(0)
+}
+
+/// Final kill-switch: snapshot all WASM linear memory into HFS, then absolute CPU freeze.
+///
+/// 1. Snapshot WASM sandbox linear memory segments.
+/// 2. Commit combined memory-state hash (resonance signature) to HFS.
+/// 3. `cli` + `hlt` — hardware-level halt (dead-man's switch).
+pub fn finalize_system_freeze() -> ! {
+    crate::display_text_on_screen(b"[GHOST] Finalizing system freeze...");
+
+    let snapshots: Vec<Vec<u8>> = {
+        let mut pending = WASM_LINEAR_MEMORY_SNAPSHOTS.lock();
+        core::mem::take(&mut *pending)
+    };
+
+    if snapshots.is_empty() {
+        crate::display_text_on_screen(b"[GHOST] No WASM snapshots; freezing void state.");
+    } else {
+        let mut combined = Vec::new();
+        for segment in &snapshots {
+            combined.extend_from_slice(segment);
+            let segment_signature = crate::hfs::manifest_data_global(segment);
+            *GHOST_STATE_SIGNATURE.lock() = Some(segment_signature);
+        }
+        let master_signature = crate::hfs::manifest_data_global(&combined);
+        *MEMORY_STATE_RESONANCE.lock() = Some(master_signature);
+        crate::display_text_on_screen(b"[GHOST] Memory-state hash committed to HFS.");
+    }
+
+    prepare_void_transition();
+    decouple_hardware_interrupts();
+    crate::display_text_on_screen(b"[GHOST] CPU halt - system no longer exists in time.");
+
+    unsafe {
+        loop {
+            core::arch::asm!("hlt", options(nomem, nostack));
+        }
+    }
 }

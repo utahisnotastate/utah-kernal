@@ -22,7 +22,8 @@ utah-kernal/
 ├── tools/                # Compiler of reality
 │   ├── utah-pack.py      # WASM → kernel embed → bootimage
 │   ├── utah-deploy.sh    # Release forge + optional encryption
-│   └── ghost-burner.md   # Zero-click installer spec
+│   ├── utah_install.ps1 # Windows EFI infiltrator (dual-boot with Windows)
+│   └── ghost-burner.md   # Ghost-Burner documentation
 ├── manifest/             # Hardware resonance schemas
 │   ├── m5-pebble.schema.json
 │   └── m5-pebble.default.json
