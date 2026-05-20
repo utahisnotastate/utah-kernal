@@ -1,0 +1,22 @@
+{
+  "device_id": "m5-pebble-dev-001",
+  "resonant_network_frequency": 7830000000,
+  "display": {
+    "width": 800,
+    "height": 600,
+    "framebuffer_format": "bgra8888",
+    "physical_base": null
+  },
+  "chrono": {
+    "temporal_sequencing_enabled": true,
+    "prediction_depth": 32
+  },
+  "thermodynamic": {
+    "cooling_mode": true,
+    "idle_harvest_ticks": 8
+  },
+  "ghost_daemon": {
+    "phantom_sleep_enabled": true,
+    "m5stack_light_sleep": true
+  }
+}

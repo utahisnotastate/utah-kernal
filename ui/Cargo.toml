@@ -1,0 +1,7 @@
+[package]
+name = "glass-forge"
+version = "0.1.0"
+edition = "2021"
+description = "Glass-Forge — direct-to-VRAM holographic UI for Utah-OS (zero window manager)"
+
+[dependencies]

@@ -64,9 +64,13 @@ Atomic XOR-delta commits patched images into HFS without full OS reinstall.
 ## Build and Deploy
 
 ```bash
-python utah-pack.py app.wasm   # or: py -3 utah-pack.py app.wasm
-./utah-deploy.sh
-cargo run --release
+python tools/utah-pack.py app.wasm
+./tools/utah-deploy.sh
+cd core && cargo run --release
 ```
+
+### Glass-Forge UI (`ui/`)
+
+Direct-to-VRAM glass-morphic rendering — no X11, Wayland, or browser. Boot splash and `render_interface_node` host import. See `ui/src/glass.rs`.
 
 See [README.md](README.md) for toolchain prerequisites.

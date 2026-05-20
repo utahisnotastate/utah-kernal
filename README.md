@@ -32,25 +32,25 @@ On Windows, add QEMU to your `PATH` after installation.
 
 ## Compilation and Deployment
 
-The repository includes **`utah-pack.py`**, a build orchestrator that embeds your compiled `.wasm` payload into `src/main.rs` and invokes `cargo bootimage`.
+The repository includes **`tools/utah-pack.py`**, a build orchestrator that embeds your compiled `.wasm` payload into `core/src/main.rs` and invokes `cargo bootimage`.
 
 1. Build your application to WebAssembly (`.wasm`). The guest should export `_start` and linear memory named `memory`. To print to the screen, import `(utah_system, print_text_to_screen)` with two `i32` parameters (pointer, length) as defined in `src/system_calls.rs`.
 2. Package and compile the kernel:
 
 ```bash
-python utah-pack.py path/to/your_application.wasm
+python tools/utah-pack.py path/to/your_application.wasm
 ```
 
 On Windows, if `python` is not on your PATH, use:
 
 ```bash
-py -3 utah-pack.py path\to\your_application.wasm
+py -3 tools\utah-pack.py path\to\your_application.wasm
 ```
 
 3. Boot the image in QEMU:
 
 ```bash
-cargo run
+cd core && cargo run
 ```
 
 Optional: build a release image with:
@@ -63,26 +63,20 @@ cargo bootimage --release
 
 Output (debug build) is typically:
 
-`target/x86_64-unknown-none/debug/bootimage-utah-kernel.bin`
+`core/target/x86_64-unknown-none/debug/bootimage-utah-kernel.bin`
+
+See [REPO_ARCHITECTURE.md](REPO_ARCHITECTURE.md) for the full tree.
 
 ## Repository Layout
 
 | Path | Purpose |
 |------|---------|
-| `src/main.rs` | Kernel entry, VGA text output, payload hook (rewritten by `utah-pack.py`) |
-| `src/boot.asm` | Multiboot2 header for GRUB-compatible boot loaders |
-| `src/allocator.rs` | Heap allocator for guest/kernel allocations |
-| `src/wasm_runtime.rs` | Wasmi loader and instance startup |
-| `src/system_calls.rs` | Host functions (system calls) exposed to guests |
-| `src/hfs.rs` | Holographic File System — content-addressable, deduplicated in-kernel storage |
-| `src/zero_point_net.rs` | Zero-Point Network — resonance-frequency intent broadcast/consume |
-| `src/chrono_scheduler.rs` | Chrono-Scheduler — predictive intent pre-staging |
-| `utah-deploy.sh` | Release forge script (bootimage + optional AES packaging) |
-| `src/kernel_config.rs` | Utah-OS `OmegaConfiguration` master constants |
-| `src/utah_os.rs` | Utah-OS boot orchestration and idle service loop |
-| `src/thermodynamic_virtualizer.rs` | Idle harvest + thermodynamic telemetry |
-| `src/delta_wave_patch.rs` | Delta-wave in-place patching |
-| `src/ghost_daemon.rs` | Ghost-Daemon suspend/resume via HFS |
+| `core/` | Ring-0 kernel (`utah-kernel` crate) |
+| `ui/` | Glass-Forge direct-to-VRAM UI (`glass-forge` crate) |
+| `tools/utah-pack.py` | WASM ingest + bootimage forge |
+| `tools/utah-deploy.sh` | Release build + optional encryption |
+| `tools/ghost-burner.md` | Zero-click dual-boot installer spec |
+| `manifest/` | M5-Pebble hardware JSON schemas |
 | `UTAH_OS.md` | Utah-OS architecture and host API index |
 | `MONETIZATION.md` | The Governor — Compute Sovereignty business model |
 | `utah-pack.py` | WASM ingest, source injection, `cargo bootimage` driver |
@@ -125,7 +119,7 @@ Built-in transitions include `1→2→3→4` and `10→11→12`. When a predicti
 ### Production deploy
 
 ```bash
-./utah-deploy.sh
+./tools/utah-deploy.sh
 ```
 
 Requires `cargo`, `bootimage`, and optionally `openssl` for `utah_v1_signed.pkg`.

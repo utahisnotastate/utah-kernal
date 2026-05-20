@@ -373,6 +373,18 @@ pub fn register_system_calls(linker: &mut Linker<()>, _engine: &Engine) {
             },
         )
         .expect("Failed to register enter_phantom_sleep call.");
+
+    // System Call 15: Glass-Forge — render a glass voxel node at (x, y) with intensity.
+    linker
+        .func_wrap(
+            "utah_system",
+            "render_interface_node",
+            |_: Caller<'_, ()>, node_x: i32, node_y: i32, intensity: i32| {
+                let level = u8::try_from(intensity.clamp(0, 255)).unwrap_or(128);
+                crate::ui::render_interface_node(node_x, node_y, level);
+            },
+        )
+        .expect("Failed to register render_interface_node call.");
 }
 
 fn read_guest_bytes(

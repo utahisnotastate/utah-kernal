@@ -13,6 +13,9 @@ pub fn boot() {
     crate::thermodynamic_virtualizer::bootstrap();
     crate::display_text_on_screen(b"Thermodynamic virtualizer online.");
     crate::display_text_on_screen(b"Ghost-Daemon armed.");
+    crate::ui::init_framebuffer();
+    crate::ui::render_boot_splash();
+    crate::display_text_on_screen(b"Glass-Forge interface manifested.");
 }
 
 /// Idle servicing hook — harvest thermodynamics and run ghost housekeeping.

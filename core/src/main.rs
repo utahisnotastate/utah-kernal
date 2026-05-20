@@ -3,6 +3,7 @@
 #![feature(alloc_error_handler)]
 
 extern crate alloc;
+extern crate glass_forge;
 
 core::arch::global_asm!(include_str!("boot.asm"));
 
@@ -14,6 +15,7 @@ mod hfs;
 mod kernel_config;
 mod system_calls;
 mod thermodynamic_virtualizer;
+mod ui;
 mod utah_os;
 mod wasm_runtime;
 mod zero_point_net;

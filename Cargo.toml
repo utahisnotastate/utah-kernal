@@ -1,30 +1,11 @@
-[package]
-name = "utah-kernel"
-version = "0.1.0"
-edition = "2021"
-description = "A bare-metal unikernel executing WebAssembly in Ring-0"
-
-[dependencies]
-# Used for safe, lock-free initialization of variables before the OS fully boots.
-lazy_static = { version = "1.0", features = ["spin_no_std"] }
-spin = "0.9"
-# Ensures the compiler doesn't accidentally erase our hardware interactions.
-volatile = "0.2.6"
-# The WebAssembly execution engine. We disable default features because we have no standard OS yet.
-wasmi = { version = "0.31", default-features = false }
-# A simple memory manager to hand out blocks of memory.
-linked_list_allocator = "0.10.5"
-# Packages the kernel into a bootable disk image (used by the bootimage runner).
-bootloader = "0.9.23"
-
-[package.metadata.bootimage]
-default-target = "x86_64-unknown-none"
+[workspace]
+members = ["core", "ui"]
+resolver = "2"
 
 [profile.dev]
-# If the operating system encounters a fatal error, stop immediately rather than trying to clean up.
 panic = "abort"
 
 [profile.release]
 panic = "abort"
-opt-level = "z" # Optimize the compiled code to be as small as possible.
-lto = true      # Link Time Optimization makes the final kernel run faster.
+opt-level = "z"
+lto = true
