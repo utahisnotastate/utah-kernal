@@ -72,7 +72,16 @@ Reboot → boot menu → USB **UTAH-OS**. Internal Windows disk is **not** forma
 
 Adds **Utah-OS Reality Console** to BCD; reboot and pick from firmware menu.
 
-## 7. Try Genesis apps (host dev)
+## 7. Build bootable ISO (VirtualBox / VMware / QEMU)
+
+**Linux / WSL** (requires `grub-mkrescue` or `xorriso`):
+
+```bash
+python tools/forge_iso.py
+qemu-system-x86_64 -cdrom target/utah-os.iso -m 512 -vga std
+```
+
+## 8. Try Genesis apps (host dev)
 
 ```bash
 cd genesis

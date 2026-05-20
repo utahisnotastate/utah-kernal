@@ -23,7 +23,7 @@ A **bare-metal**, **Ring-0** unikernel that runs **WebAssembly** with explicit h
 | **Zero-Point Network** | Resonance-frequency messaging (no TCP/IP in kernel) |
 | **Chrono-Scheduler** | Predictive intent pre-staging |
 | **Ghost-Daemon** | State collapse, phantom sleep, system freeze |
-| **Glass-Forge** (`ui/`) | 800×600 glass-morphic framebuffer UI |
+| **Glass-Forge** (`ui/`) | Themed desktop manifold (Dark/Golden/Light/Linda/Occult) + vibe parser |
 | **Tools** | `utah-pack`, `utah-deploy`, USB + EFI Ghost-Burner scripts |
 | **Genesis** | Python `UtahApp` / Utah-Browser / VibeCode demos |
 
@@ -122,7 +122,7 @@ Module: **`utah_system`**. Guest must export **`memory`** and **`_start`**.
 | Energy | `read_thermodynamics` |
 | Updates | `apply_delta_patch` |
 | Ghost | `ghost_suspend`, `ghost_resume`, `register_wasm_snapshot`, `finalize_system_freeze`, `enter_phantom_sleep` |
-| UI | `render_interface_node`, `draw_voxel_cloud` |
+| UI | `render_interface_node`, `draw_voxel_cloud`, `set_theme_preset`, `apply_vibe_theme` |
 
 Complete tables: [docs/HOST_API.md](docs/HOST_API.md)
 
@@ -133,6 +133,7 @@ Complete tables: [docs/HOST_API.md](docs/HOST_API.md)
 | Script | Use |
 |--------|-----|
 | [tools/utah-pack.py](tools/utah-pack.py) | Embed `.wasm` → `core/src/main.rs` → `cargo bootimage` |
+| [tools/forge_iso.py](tools/forge_iso.py) | Build `target/utah-os.iso` for VirtualBox/VMware/QEMU |
 | [tools/utah-deploy.sh](tools/utah-deploy.sh) | Release build + optional AES package |
 | [tools/create_utah_usb.ps1](tools/create_utah_usb.ps1) | USB Ghost-Boot key (FAT32 + GRUB + kernel) |
 | [tools/utah_install.ps1](tools/utah_install.ps1) | Internal EFI dual-boot beside Windows |

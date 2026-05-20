@@ -14,6 +14,7 @@ const MAX_HOLOGRAM_BYTES: usize = 64 * 1024;
 const MAX_BROADCAST_BYTES: usize = 64 * 1024;
 const MAX_DELTA_BYTES: usize = 64 * 1024;
 const MAX_GHOST_STATE_BYTES: usize = 256 * 1024;
+const MAX_VIBE_THEME_BYTES: usize = 512;
 
 /// Registers the kernel's safe "menu" of host functions on the linker before instantiation.
 pub fn register_system_calls(linker: &mut Linker<()>, _engine: &Engine) {
@@ -430,6 +431,41 @@ pub fn register_system_calls(linker: &mut Linker<()>, _engine: &Engine) {
             },
         )
         .expect("Failed to register draw_voxel_cloud call.");
+
+    // System Call 19: set theme preset (0=dark, 1=golden, 2=light, 3=linda, 4=occult).
+    linker
+        .func_wrap(
+            "utah_system",
+            "set_theme_preset",
+            |_: Caller<'_, ()>, preset_id: i32| {
+                crate::theme::set_preset(crate::theme::ThemePreset::from_u32(
+                    preset_id.max(0) as u32,
+                ));
+                crate::ui::render_boot_splash();
+            },
+        )
+        .expect("Failed to register set_theme_preset call.");
+
+    // System Call 20: vibe-code theme overrides from guest memory string.
+    linker
+        .func_wrap(
+            "utah_system",
+            "apply_vibe_theme",
+            |caller: Caller<'_, ()>, memory_pointer: i32, text_length: i32| {
+                if let Ok(intent) = read_guest_bytes(
+                    &caller,
+                    memory_pointer,
+                    text_length,
+                    MAX_VIBE_THEME_BYTES,
+                ) {
+                    if let Ok(text) = core::str::from_utf8(&intent) {
+                        crate::theme::apply_vibe_modification(text);
+                        crate::ui::render_boot_splash();
+                    }
+                }
+            },
+        )
+        .expect("Failed to register apply_vibe_theme call.");
 }
 
 fn read_guest_bytes(

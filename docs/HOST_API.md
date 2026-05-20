@@ -74,6 +74,10 @@ Example transitions: `1→2→3→4`, `10→11→12`.
 |--------|-----------|---------|-------------|
 | `render_interface_node` | `(i32 x, i32 y, i32 intensity)` | — | Glass voxel (0–255 intensity) |
 | `draw_voxel_cloud` | `(i32 ox, i32 oy, i32 vx, i32 vy, i32 intensity)` | — | Particle cloud along vector |
+| `set_theme_preset` | `(preset_id: i32)` | — | 0–4: dark, golden, light, linda, occult |
+| `apply_vibe_theme` | `(ptr, len)` | — | Parse vibe string; redraw desktop |
+
+See [THEMES.md](THEMES.md).
 
 ## WAT import examples
 

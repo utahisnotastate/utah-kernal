@@ -2,6 +2,15 @@
 
 All notable changes to [utah-kernal](https://github.com/utahisnotastate/utah-kernal) are documented here.
 
+## [Unreleased]
+
+### Added
+
+- Theme Registry Matrix (`ui/src/theme.rs`): Dark, Golden, Light, Linda, Occult presets
+- Runtime vibe-code color parser (`apply_vibe_theme` host call)
+- Utah-OS desktop manifold renderer (taskbar, panels, browser workspace)
+- `tools/forge_iso.py` — GRUB2 staging + bootable ISO for VMs
+
 ## [1.0.0] - 2026-05-20
 
 First public release: **Utah-Kernel** bare-metal core + **Utah-OS** product layer.

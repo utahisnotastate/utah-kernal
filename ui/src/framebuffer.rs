@@ -32,7 +32,7 @@ impl Default for FramebufferConfig {
 }
 
 pub struct Framebuffer {
-    config: FramebufferConfig,
+    pub config: FramebufferConfig,
 }
 
 impl Framebuffer {

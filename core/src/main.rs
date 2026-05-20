@@ -14,6 +14,7 @@ mod ghost_daemon;
 mod hfs;
 mod kernel_config;
 mod system_calls;
+mod theme;
 mod thermodynamic_virtualizer;
 mod ui;
 mod utah_os;
