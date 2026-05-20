@@ -1,147 +1,182 @@
-# Utah-Kernel / Utah-OS: Ring-0 WebAssembly Unikernel Architecture
+# Utah-Kernel / Utah-OS
 
-> **Utah-OS** is the product console layered on Utah-Kernel. See [UTAH_OS.md](UTAH_OS.md) for the SOTA feature matrix and [MONETIZATION.md](MONETIZATION.md) for the commercial blueprint.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/rust-nightly-orange)](rust-toolchain.toml)
+[![Release](https://img.shields.io/badge/release-v1.0.0-green)](CHANGELOG.md)
 
-## Abstract
+**Repository:** [github.com/utahisnotastate/utah-kernal](https://github.com/utahisnotastate/utah-kernal)
 
-The Utah-Kernel is an experimental, bare-metal unikernel designed to reduce the thermodynamic and computational overhead of traditional hardware context switching. By running guest logic as WebAssembly on bare metal (with host functions for hardware access), the kernel targets near-zero latency execution paths compared with conventional user/kernel mode transitions. Security and memory isolation are enforced through WebAssembly validation and sandboxed linear memory, complemented by explicit host function boundaries in `src/system_calls.rs`.
+> I set out to build a state-of-the-art OS. The only thing I knew for sure was that I needed a **kernel** first. I got impatient and turned that kernel into an OS as well — so this repo is **Utah-Kernel** and **Utah-OS**.
 
-## Architectural Advantages
+A **bare-metal**, **Ring-0** unikernel that runs **WebAssembly** with explicit host functions instead of a traditional user/kernel split. Includes **Glass-Forge** (direct-to-VRAM UI), **Ghost-Boot** installers for USB/Windows coexistence, and a **Genesis** app scaffold.
 
-1. **Zero Context Switching (design goal):** Applications compile to WebAssembly and run in a single address space with kernel services exposed as host imports.
-2. **Mathematical Sandboxing:** Module validation and typed linear memory reduce common memory-safety failure modes before code runs on hardware.
-3. **Single Address Space:** Avoids per-process page-table churn and TLB shootdown patterns typical of multi-process POSIX systems.
-4. **Language-Agnostic Ecosystem:** Any toolchain that emits `wasm32` modules (Rust, C, C++, Go, and others) can supply a payload for packaging.
+**New here?** → [docs/QUICKSTART.md](docs/QUICKSTART.md)
 
-## Prerequisites
+---
 
-To compile the Utah-Kernel and forge bootable images, install:
+## What ships in v1.0.0
 
-- [rustup](https://rustup.rs/) with the **nightly** toolchain (see `rust-toolchain.toml` in this repo)
-- [cargo-bootimage](https://github.com/rust-osdev/bootimage) for bootable `.bin` images
-- [QEMU](https://www.qemu.org/) (`qemu-system-x86_64`) for emulation
+| Component | Description |
+|-----------|-------------|
+| **Kernel** (`core/`) | Heap, Wasmi runtime, Multiboot2, 18 `utah_system` host calls |
+| **HFS** | Content-addressed storage (DJB2 resonance signatures) |
+| **Zero-Point Network** | Resonance-frequency messaging (no TCP/IP in kernel) |
+| **Chrono-Scheduler** | Predictive intent pre-staging |
+| **Ghost-Daemon** | State collapse, phantom sleep, system freeze |
+| **Glass-Forge** (`ui/`) | 800×600 glass-morphic framebuffer UI |
+| **Tools** | `utah-pack`, `utah-deploy`, USB + EFI Ghost-Burner scripts |
+| **Genesis** | Python `UtahApp` / Utah-Browser / VibeCode demos |
+
+**Roadmap (not v1.0.0):** KVM Windows capsule, GPU passthrough, NVMe, physical NIC, Wry browser blit.
+
+Details: [docs/RELEASE.md](docs/RELEASE.md) · [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+## Quick start
 
 ```bash
+git clone https://github.com/utahisnotastate/utah-kernal.git
+cd utah-kernal
+
+# Toolchain (once)
 rustup toolchain install nightly
 rustup component add rust-src llvm-tools-preview --toolchain nightly
 rustup target add x86_64-unknown-none --toolchain nightly
 cargo install bootimage
+
+# Build & run in QEMU
+cd core
+cargo bootimage
+cargo run
 ```
 
-On Windows, add QEMU to your `PATH` after installation.
-
-## Compilation and Deployment
-
-The repository includes **`tools/utah-pack.py`**, a build orchestrator that embeds your compiled `.wasm` payload into `core/src/main.rs` and invokes `cargo bootimage`.
-
-1. Build your application to WebAssembly (`.wasm`). The guest should export `_start` and linear memory named `memory`. To print to the screen, import `(utah_system, print_text_to_screen)` with two `i32` parameters (pointer, length) as defined in `src/system_calls.rs`.
-2. Package and compile the kernel:
+**Package your WASM app:**
 
 ```bash
-python tools/utah-pack.py path/to/your_application.wasm
-```
-
-On Windows, if `python` is not on your PATH, use:
-
-```bash
-py -3 tools\utah-pack.py path\to\your_application.wasm
-```
-
-3. Boot the image in QEMU:
-
-```bash
+python tools/utah-pack.py path/to/app.wasm   # Windows: py -3 tools\utah-pack.py ...
 cd core && cargo run
 ```
 
-Optional: build a release image with:
+**Boot from USB (does not format internal Windows drive):**
+
+```powershell
+# Admin PowerShell, after: cd core; cargo bootimage --release
+.\tools\create_utah_usb.ps1
+```
+
+Full guide: [docs/QUICKSTART.md](docs/QUICKSTART.md)
+
+---
+
+## Architecture
+
+```
+UEFI / QEMU
+    └── Utah-Kernel (Ring-0)
+            ├── Wasmi (WASM guests)
+            ├── HFS · ZPN · Chrono · Ghost-Daemon
+            └── Glass-Forge → linear framebuffer
+```
+
+- **No** Linux / Windows / X11 / Wayland required on bare metal.
+- Guests call **`utah_system::*`** host functions — see [docs/HOST_API.md](docs/HOST_API.md).
+- Windows coexistence: [docs/GHOST_BOOT.md](docs/GHOST_BOOT.md).
+
+```
+utah-kernal/
+├── core/       # utah-kernel crate (Ring-0)
+├── ui/         # glass-forge crate (VRAM UI)
+├── tools/      # pack, deploy, USB/EFI installers
+├── genesis/    # UtahApp Python scaffold
+├── manifest/   # M5-Pebble hardware JSON
+└── docs/       # QUICKSTART, HOST_API, RELEASE, GHOST_BOOT
+```
+
+[REPO_ARCHITECTURE.md](REPO_ARCHITECTURE.md)
+
+---
+
+## Prerequisites
+
+| Tool | Purpose |
+|------|---------|
+| [rustup](https://rustup.rs/) nightly | Bare-metal Rust (`rust-toolchain.toml`) |
+| [bootimage](https://github.com/rust-osdev/bootimage) | Bootable disk image |
+| [QEMU](https://www.qemu.org/) | Emulation (`qemu-system-x86_64`) |
+| Python 3 | `utah-pack.py`, Genesis demos |
+| PowerShell (Admin) | Windows USB / EFI installers |
+
+---
+
+## Host API (summary)
+
+Module: **`utah_system`**. Guest must export **`memory`** and **`_start`**.
+
+| Category | Imports |
+|----------|---------|
+| Display | `print_text_to_screen` |
+| Storage | `save_hologram`, `load_hologram` |
+| Network | `broadcast`, `consume`, `tune_mesh`, `mesh_frequency` |
+| Scheduler | `record_and_predict`, `take_staged_intent` |
+| Energy | `read_thermodynamics` |
+| Updates | `apply_delta_patch` |
+| Ghost | `ghost_suspend`, `ghost_resume`, `register_wasm_snapshot`, `finalize_system_freeze`, `enter_phantom_sleep` |
+| UI | `render_interface_node`, `draw_voxel_cloud` |
+
+Complete tables: [docs/HOST_API.md](docs/HOST_API.md)
+
+---
+
+## Tools
+
+| Script | Use |
+|--------|-----|
+| [tools/utah-pack.py](tools/utah-pack.py) | Embed `.wasm` → `core/src/main.rs` → `cargo bootimage` |
+| [tools/utah-deploy.sh](tools/utah-deploy.sh) | Release build + optional AES package |
+| [tools/create_utah_usb.ps1](tools/create_utah_usb.ps1) | USB Ghost-Boot key (FAT32 + GRUB + kernel) |
+| [tools/utah_install.ps1](tools/utah_install.ps1) | Internal EFI dual-boot beside Windows |
+
+[tools/README.md](tools/README.md) · [tools/ghost-burner.md](tools/ghost-burner.md)
+
+---
+
+## Documentation
+
+| Audience | Document |
+|----------|----------|
+| Developers | [README.md](README.md) (this file), [docs/HOST_API.md](docs/HOST_API.md), [UTAH_OS.md](UTAH_OS.md) |
+| Quick setup | [docs/QUICKSTART.md](docs/QUICKSTART.md) |
+| Release scope | [docs/RELEASE.md](docs/RELEASE.md), [CHANGELOG.md](CHANGELOG.md) |
+| Non-technical | [CIVILIAN_DOCUMENTATION.md](CIVILIAN_DOCUMENTATION.md) |
+| Young learners | [CHILD_MANUAL.md](CHILD_MANUAL.md) |
+| Business | [MONETIZATION.md](MONETIZATION.md) |
+| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
+
+---
+
+## Build outputs
+
+| Profile | Typical path |
+|---------|----------------|
+| Debug | `core/target/x86_64-unknown-none/debug/bootimage-utah-kernel.bin` |
+| Release | `core/target/x86_64-unknown-none/release/bootimage-utah-kernel.bin` |
 
 ```bash
-set UTAH_PACK_PROFILE=release
-python utah-pack.py path/to/your_application.wasm
+cd core
 cargo bootimage --release
 ```
 
-Output (debug build) is typically:
-
-`core/target/x86_64-unknown-none/debug/bootimage-utah-kernel.bin`
-
-See [REPO_ARCHITECTURE.md](REPO_ARCHITECTURE.md) for the full tree.
-
-## Repository Layout
-
-| Path | Purpose |
-|------|---------|
-| `core/` | Ring-0 kernel (`utah-kernel` crate) |
-| `ui/` | Glass-Forge direct-to-VRAM UI (`glass-forge` crate) |
-| `tools/utah-pack.py` | WASM ingest + bootimage forge |
-| `tools/utah-deploy.sh` | Release build + optional encryption |
-| `tools/ghost-burner.md` | Zero-click dual-boot installer spec |
-| `manifest/` | M5-Pebble hardware JSON schemas |
-| `UTAH_OS.md` | Utah-OS architecture and host API index |
-| `MONETIZATION.md` | The Governor — Compute Sovereignty business model |
-| `utah-pack.py` | WASM ingest, source injection, `cargo bootimage` driver |
-
-## Extensibility and System Calls
-
-Hardware and OS services are exposed to WebAssembly through **host functions** registered in `src/system_calls.rs`. New capabilities (networking, timers) should be added there so guests never touch device registers directly.
-
-### Holographic File System (HFS)
-
-Guest modules can persist blobs by **content hash** (DJB2 resonance signature), not by file paths:
-
-| Host import | Parameters | Returns |
-|-------------|------------|---------|
-| `utah_system::save_hologram` | `(pointer: i32, length: i32)` | `i64` resonance signature |
-| `utah_system::load_hologram` | `(signature: i64, dest_pointer: i32)` | `i32` bytes written |
-
-Identical payloads deduplicate automatically. Storage lives in RAM until a block-device driver exists.
-
-### Zero-Point Network (ZPN)
-
-Headerless intent messaging by **resonance frequency** (default local tune: `12345`):
-
-| Host import | Parameters | Returns |
-|-------------|------------|---------|
-| `utah_system::broadcast` | `(target_freq: i64, pointer: i32, length: i32)` | — |
-| `utah_system::consume` | `(dest_pointer: i32)` | `i32` bytes written |
-
-Broadcasts loop back when `target_freq` matches this node's local frequency. A global intent ether buffer holds payloads until a physical NIC driver is wired in.
-
-### Chrono-Scheduler (predictive intent)
-
-| Host import | Parameters | Returns |
-|-------------|------------|---------|
-| `utah_system::record_and_predict` | `(action_id: i32)` | `i64` predicted next action (0 = none) |
-| `utah_system::take_staged_intent` | `()` | `i64` pre-staged action id (0 = none) |
-
-Built-in transitions include `1→2→3→4` and `10→11→12`. When a prediction fires, the kernel pre-stages a small allocator warm-up and queues the intent for `take_staged_intent`.
-
-### Production deploy
-
-```bash
-./tools/utah-deploy.sh
-```
-
-Requires `cargo`, `bootimage`, and optionally `openssl` for `utah_v1_signed.pkg`.
-
-### Ghost-Daemon phantom sleep
-
-`enter_phantom_sleep()` collapses volatile buffers, masks interrupts, and executes `cli` + `hlt` — a full CPU void state, not a frozen UI thread. Exposed to WASM as `utah_system::enter_phantom_sleep` (diverges). Use `enter_phantom_sleep_with_heartbeat` in-kernel when PIT/timer wake is wired.
-
-## Documentation (by audience)
-
-| Tier | File | Audience |
-|------|------|----------|
-| 1 | [README.md](README.md) | Engineers and contributors |
-| 2 | [CIVILIAN_DOCUMENTATION.md](CIVILIAN_DOCUMENTATION.md) | Non-technical readers |
-| 3 | [CHILD_MANUAL.md](CHILD_MANUAL.md) | Young learners and beginners |
-| — | [UTAH_OS.md](UTAH_OS.md) | Utah-OS SOTA matrix and module guide |
-| — | [MONETIZATION.md](MONETIZATION.md) | Commercial / fleet monetization blueprint |
+---
 
 ## Status
 
-The kernel is a **high-density prototype**: bootloader integration, heap, Wasmi runtime, and a print host function are in place. NVMe/SATA, TCP/IP, and automatic on-disk WASM discovery are not yet implemented. For production-style workflows, use `utah-pack.py` instead of hand-editing `main.rs`.
+**v1.0.0** is a **complete open-source foundation**: documented, buildable, bootable in QEMU, packagable via WASM, installable via USB/EFI scripts.
+
+It is a **high-density research prototype**, not a daily-driver desktop OS. Use QEMU and USB paths for safe testing.
+
+---
 
 ## License
 
-Specify your license before a public GitHub release (e.g. MIT or Apache-2.0).
+[MIT License](LICENSE) — Copyright (c) 2026 Utah-Kernel / Utah-OS Contributors

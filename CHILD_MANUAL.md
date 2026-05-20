@@ -21,3 +21,5 @@ With the Utah-Kernel:
 3. The computer runs faster than a race car, and uses almost no energy!
 
 You are going to learn how to write a simple program, put it in the Utah-Kernel, and watch it drive the computer all by itself!
+
+**Grown-ups start here:** [docs/QUICKSTART.md](docs/QUICKSTART.md)

@@ -2,11 +2,11 @@
 
 /// Utah-OS product version string (also shown on boot banner).
 #[allow(dead_code)]
-pub const UTAH_OS_VERSION: &str = "0.5.0-omega";
+pub const UTAH_OS_VERSION: &str = "1.0.0";
 
 /// Initializes all Utah-OS subsystems from the master configuration.
 pub fn boot() {
-    crate::display_text_on_screen(b"Utah-OS v0.5.0-omega booting...");
+    crate::display_text_on_screen(b"Utah-OS v1.0.0 booting...");
     crate::kernel_config::apply_master_configuration();
     crate::display_text_on_screen(b"Telepathic mesh tuned.");
     crate::display_text_on_screen(b"Chrono-Scheduler manifold active.");

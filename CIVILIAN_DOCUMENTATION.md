@@ -27,3 +27,7 @@ When you run an app on the Utah-Kernel, your app is placed directly inside the V
 * No waiting.
 
 Your programs run at the absolute maximum speed the physical silicon allows. You are no longer running an "Operating System." You are running pure intention on bare metal.
+
+---
+
+**Try it:** [docs/QUICKSTART.md](docs/QUICKSTART.md) · **Project:** [github.com/utahisnotastate/utah-kernal](https://github.com/utahisnotastate/utah-kernal)
