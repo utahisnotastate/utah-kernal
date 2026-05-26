@@ -14,6 +14,21 @@ A **bare-metal**, **Ring-0** unikernel that runs **WebAssembly** with explicit h
 
 ---
 
+## Why Utah-Kernel? (Architecture vs. Legacy)
+While Linux serves as a robust general-purpose engine, it carries the weight of decades of legacy abstractions—processes, complex scheduling, driver stacks, and the traditional user/kernel privilege boundary. Utah-Kernel is a high-density research prototype built on a different set of first principles:
+
+Zero-Overhead Abstraction: Traditional OSs rely on a user/kernel context switch. Utah-Kernel utilizes a Ring-0 unikernel model that runs WebAssembly guests with explicit host functions (utah_system::*), eliminating the performance tax of traditional kernel-mode transitions.
+
+Intent-Based Scheduling: Linux relies on preemptive process scheduling, which often struggles with predictable intent. The Chrono-Scheduler in Utah-Kernel performs predictive intent pre-staging, aligning resource allocation with actual workload patterns rather than reactive process management.
+
+Direct-to-VRAM UI (Glass-Forge): Unlike Linux, which requires heavy graphics subsystems (X11/Wayland/DRM/KMS), Utah-Kernel uses Glass-Forge to pipe UI elements directly into the linear framebuffer, resulting in a significantly lower memory footprint and latency for the desktop manifold.
+
+Resonant Networking: Abandoning the complexities of a kernel-space TCP/IP stack, Utah-Kernel employs Zero-Point Network (ZPN), utilizing resonance-frequency messaging for inter-system communication.
+
+Unified Canvas Topology: Display management is treated as a unified virtual desktop topology, optimizing refresh rates and pinning windows at the hardware-abstraction level, rather than through layered compositor software.
+
+In summary: If your environment requires a high-performance, single-purpose, or research-driven unikernel that prioritizes direct execution over broad hardware compatibility, Utah-Kernel offers a streamlined alternative to the heavy abstraction layers of the Linux kernel.
+
 ## Features (current `main` branch)
 
 | Component | Description |
